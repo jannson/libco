@@ -3,7 +3,14 @@
 /*[amd64, arm, ppc, x86]:
    by default, co_swap_function is marked as a text (code) section
    if not supported, uncomment the below line to use mprotect instead */
-/* #define LIBCO_MPROTECT */
+
+/*
+ * Testing Fluent Bit on Windows when doing co_swap it crash if the
+ * option LIBCO_MPROTECT is not defined.
+ */
+#ifdef _WIN32
+#define LIBCO_MPROTECT
+#endif
 
 /*[amd64]:
    Win64 only: provides a substantial speed-up, but will thrash XMM regs
@@ -26,10 +33,13 @@
   #define alignas(bytes)
 #endif
 
-#ifndef _MSC_VER
-  #define section(name) __attribute__((section("." #name "#")))
+#if defined(_MSC_VER)
+  #pragma data_seg(".text")
+  #define text_section __declspec(allocate(".text"))
+#elif defined(__APPLE__) && defined(__MACH__)
+  #define text_section __attribute__((section("__TEXT,__text")))
 #else
-  #define section(name) __declspec(allocate("." #name))
+  #define text_section __attribute__((section(".text#")))
 #endif
 
 /* ifdef LIBCO_C */
